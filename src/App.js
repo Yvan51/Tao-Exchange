@@ -7,15 +7,40 @@ import SendMoney from "./pages/SendMoney";
 import Dashboard from "./pages/Dashboard";
 import Payment from "./pages/Payment";
 
+const EXCHANGE_API_KEY = "6a601022d9e152a07221ddc6";
+
 function Home() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const [rates, setRates] = useState({ MXAF: null, XMUR: null, MEUR: null });
+  const [heroRate, setHeroRate] = useState(null);
+  const [heroAmount, setHeroAmount] = useState(1000);
+  const [ratesLoading, setRatesLoading] = useState(true);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    setRatesLoading(true);
+    Promise.all([
+      fetch(`https://v6.exchangerate-api.com/v6/${EXCHANGE_API_KEY}/pair/MUR/XAF`).then(r => r.json()),
+      fetch(`https://v6.exchangerate-api.com/v6/${EXCHANGE_API_KEY}/pair/XAF/MUR`).then(r => r.json()),
+      fetch(`https://v6.exchangerate-api.com/v6/${EXCHANGE_API_KEY}/pair/MUR/EUR`).then(r => r.json()),
+    ]).then(([mxaf, xmur, meur]) => {
+      setRates({
+        MXAF: mxaf.conversion_rate?.toFixed(4),
+        XMUR: xmur.conversion_rate?.toFixed(4),
+        MEUR: meur.conversion_rate?.toFixed(4),
+      });
+      setHeroRate(mxaf.conversion_rate);
+      setRatesLoading(false);
+    }).catch(() => setRatesLoading(false));
+  }, []);
+
+  const heroReceived = heroRate ? Math.round(heroAmount * heroRate).toLocaleString() : "...";
 
   return (
     <div className="app">
@@ -52,24 +77,36 @@ function Home() {
           <div className="hero-stats">
             <div className="stat"><span className="stat-num">2 min</span><span className="stat-label">Temps de transfert</span></div>
             <div className="stat-divider" />
-            <div className="stat"><span className="stat-num">0%</span><span className="stat-label">Frais cachés</span></div>
+            <div className="stat"><span className="stat-num">3.5%</span><span className="stat-label">Frais de service</span></div>
             <div className="stat-divider" />
             <div className="stat"><span className="stat-num">SSL</span><span className="stat-label">100% sécurisé</span></div>
           </div>
         </div>
         <div className="hero-card">
           <div className="card-inner">
-            <div className="card-header"><span>Simuler un transfert</span><span className="live-badge">● Live</span></div>
+            <div className="card-header">
+              <span>Simuler un transfert</span>
+              <span className="live-badge">● Live</span>
+            </div>
             <div className="card-field">
               <label>Vous envoyez</label>
-              <div className="input-row"><input type="number" defaultValue="1000" /><div className="currency-tag mur">MUR</div></div>
+              <div className="input-row">
+                <input type="number" value={heroAmount} onChange={(e) => setHeroAmount(e.target.value)} />
+                <div className="currency-tag mur">MUR</div>
+              </div>
             </div>
             <div className="card-arrow">⇅</div>
             <div className="card-field">
               <label>Le destinataire reçoit</label>
-              <div className="input-row"><input type="number" defaultValue="7842" readOnly /><div className="currency-tag xaf">XAF</div></div>
+              <div className="input-row">
+                <input type="text" value={ratesLoading ? "Chargement..." : heroReceived} readOnly />
+                <div className="currency-tag xaf">XAF</div>
+              </div>
             </div>
-            <div className="card-rate"><span>Taux : 1 MUR = 7,842 XAF</span><span className="rate-update">Mis à jour à l'instant</span></div>
+            <div className="card-rate">
+              <span>Taux : 1 MUR = {ratesLoading ? "..." : parseFloat(rates.MXAF).toFixed(4)} XAF</span>
+              <span className="rate-update">En direct</span>
+            </div>
             <button className="btn-primary btn-full" onClick={() => navigate("/register")}>Envoyer maintenant →</button>
           </div>
         </div>
@@ -91,11 +128,26 @@ function Home() {
         <div className="section-label">Taux de change</div>
         <h2>Transparence totale</h2>
         <div className="rates-grid">
-          <div className="rate-card"><div className="rate-flag">🇲🇺 → 🇨🇲</div><div className="rate-pair">MUR / XAF</div><div className="rate-value">7.842</div><div className="rate-change positive">↑ +0.3% aujourd'hui</div></div>
-          <div className="rate-card featured"><div className="rate-flag">🇨🇲 → 🇲🇺</div><div className="rate-pair">XAF / MUR</div><div className="rate-value">0.1275</div><div className="rate-change positive">↑ +0.2% aujourd'hui</div></div>
-          <div className="rate-card"><div className="rate-flag">🇲🇺 → 🌍</div><div className="rate-pair">MUR / EUR</div><div className="rate-value">0.0205</div><div className="rate-change negative">↓ -0.1% aujourd'hui</div></div>
+          <div className="rate-card">
+            <div className="rate-flag">🇲🇺 → 🇨🇲</div>
+            <div className="rate-pair">MUR / XAF</div>
+            <div className="rate-value">{ratesLoading ? "..." : rates.MXAF}</div>
+            <div className="rate-change positive">↑ Taux en direct</div>
+          </div>
+          <div className="rate-card featured">
+            <div className="rate-flag">🇨🇲 → 🇲🇺</div>
+            <div className="rate-pair">XAF / MUR</div>
+            <div className="rate-value">{ratesLoading ? "..." : rates.XMUR}</div>
+            <div className="rate-change positive">↑ Taux en direct</div>
+          </div>
+          <div className="rate-card">
+            <div className="rate-flag">🇲🇺 → 🌍</div>
+            <div className="rate-pair">MUR / EUR</div>
+            <div className="rate-value">{ratesLoading ? "..." : rates.MEUR}</div>
+            <div className="rate-change positive">↑ Taux en direct</div>
+          </div>
         </div>
-        <p className="rates-note">* Les taux sont indicatifs et mis à jour toutes les heures.</p>
+        <p className="rates-note">* Les taux sont en temps réel via ExchangeRate-API.</p>
       </section>
 
       <section className="section features-section">
@@ -121,9 +173,13 @@ function Home() {
 
       <footer className="footer">
         <div className="footer-logo"><span className="logo-icon">⇄</span><span className="logo-text">Tao<strong>Exchange</strong></span></div>
-        <p className="footer-sub">Une solution MQR Contracting Co Ltd</p>
-        <div className="footer-links"><a href="#terms">Conditions d'utilisation</a><a href="#privacy">Confidentialité</a><a href="#contact">Contact</a></div>
-        <p className="footer-copy">© 2025 Tao Exchange · Tous droits réservés</p>
+        <p className="footer-sub">Une solution Tao & Co</p>
+        <div className="footer-links">
+          <a href="#terms">Conditions d'utilisation</a>
+          <a href="#privacy">Confidentialité</a>
+          <a href="#contact">Contact</a>
+        </div>
+        <p className="footer-copy">© 2026 Tao Exchange · Tous droits réservés</p>
       </footer>
     </div>
   );

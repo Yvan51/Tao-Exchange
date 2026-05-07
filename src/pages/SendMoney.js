@@ -25,10 +25,18 @@ function SendMoney() {
   const [errors, setErrors] = useState({});
   const [transactionDone, setTransactionDone] = useState(false);
 
-  const FEE_PERCENT = 1.5; // frais de 1.5%
+  const FEE_PERCENT = 3.5; // frais de 1.5%
   const fee = ((amountSent * FEE_PERCENT) / 100).toFixed(2);
   const totalToPay = (parseFloat(amountSent) + parseFloat(fee)).toFixed(2);
 
+  const RATES = {
+    "MUR-XAF": 7.842,
+    "XAF-MUR": 0.1275,
+    "MUR-EUR": 0.0205,
+    "EUR-MUR": 48.78,
+    "XAF-EUR": 0.00152,
+    "EUR-XAF": 655.96,
+  };
 
   const currencies = [
     { code: "MUR", flag: "🇲🇺", name: "Roupie mauricienne" },
@@ -45,27 +53,20 @@ function SendMoney() {
 
   // Calcul du taux de change
   useEffect(() => {
-  setRateLoading(true);
-  setRateError(false);
-
-  fetch(`https://v6.exchangerate-api.com/v6/6a601022d9e152a07221ddc6/pair/${fromCurrency}/${toCurrency}`)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === "success") {
-        const rate = data.conversion_rate;
+    setRateLoading(true);
+    setRateError(false);
+    const key = `${fromCurrency}-${toCurrency}`;
+    const rate = RATES[key];
+    setTimeout(() => {
+      if (rate) {
         setExchangeRate(rate);
         setAmountReceived((amountSent * rate).toFixed(0));
       } else {
         setRateError(true);
       }
       setRateLoading(false);
-    })
-    .catch(() => {
-      setRateError(true);
-      setRateLoading(false);
-    });
-
-}, [fromCurrency, toCurrency, amountSent]);
+    }, 600);
+  }, [fromCurrency, toCurrency, amountSent]);
 
   const handleSwapCurrencies = () => {
     setFromCurrency(toCurrency);
@@ -222,7 +223,7 @@ function SendMoney() {
                 </strong>
               </div>
               <div className="rate-row">
-                <span>Frais de service (1.5%)</span>
+                <span>Frais de service (3.5%)</span>
                 <strong>{fee} {fromCurrency}</strong>
               </div>
               <div className="rate-row total">

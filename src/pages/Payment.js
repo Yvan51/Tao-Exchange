@@ -151,7 +151,7 @@ function Payment() {
               <strong>1 {transfer.fromCurrency} = {transfer.exchangeRate} {transfer.toCurrency}</strong>
             </div>
             <div className="summary-row">
-              <span>Frais de service (1.5%)</span>
+              <span>Frais de service (3.5%)</span>
               <strong>{transfer.fee} {transfer.fromCurrency}</strong>
             </div>
             <div className="summary-row total">
