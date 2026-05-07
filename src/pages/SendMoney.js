@@ -66,7 +66,8 @@ function SendMoney() {
       }
       setRateLoading(false);
     }, 600);
-  }, [fromCurrency, toCurrency, amountSent]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [fromCurrency, toCurrency, amountSent]);
 
   const handleSwapCurrencies = () => {
     setFromCurrency(toCurrency);
